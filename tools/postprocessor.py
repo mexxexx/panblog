@@ -2,11 +2,13 @@ from bs4 import BeautifulSoup
 import argparse
 import configparser
 
+import re
+import prettifyer
+
 
 def read_html(file):
     with open(file, "r") as f:
         markup = f.read()
-        markup = markup.replace("{", "{{").replace("}", "}}")
         soup = BeautifulSoup(markup, "html.parser")
     return soup
 
@@ -105,6 +107,13 @@ def create_tags(soup, tags, config):
     return result
 
 
+def remove_code_style(soup):
+    style = soup.head.find("style")
+    content = style.string
+    content = re.sub("code[ ]*?\{.*?\}", "", content)
+    # style.string.replace_with(content)
+
+
 def postprocess_site(file, config):
     soup = read_html(file)
 
@@ -127,8 +136,11 @@ def postprocess_site(file, config):
     stylesheet = soup.head.find("link", rel="stylesheet")
     stylesheet["href"] = config["GENERAL"].get("BaseUrl", "") + stylesheet.get("href")
 
+    remove_code_style(soup)
+
     with open(file, "w") as f:
-        f.write(prettify(soup))
+        html = prettifyer.prettify_html(soup.prettify())
+        f.write(html)
 
 
 def main(file, postprocessor_type, config):
