@@ -4,6 +4,9 @@ prettify_xml() can be used for any XML text.
 
 prettify_html() is specifically for BeautifulSoup.prettify() output,
 as it does not add tag linebreaks.
+
+Source taken from https://github.com/annedo/prettierfier and modified
+to process inline code tags.
 """
 
 import re
