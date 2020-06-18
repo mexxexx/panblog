@@ -5,7 +5,7 @@ active-site: "test.html"
 ignore-header: True
 ---
 
-How about a page without a title?
+<p style="margin-top: 5em">How about a page without a title?</p>
 
 Aenean tincidunt magna sit amet diam lobortis, ut tempus turpis dapibus. Sed ac ornare lorem. Curabitur quis gravida nisi. Ut in ullamcorper odio.
 
