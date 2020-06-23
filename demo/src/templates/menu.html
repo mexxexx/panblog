@@ -1,0 +1,7 @@
+<nav id="menu">
+  <ul>
+$for(menu)$
+    <li><a href="$it.href$"$if(it.active)$ class="active"$endif$>$it.text$</a></li>
+$endfor$
+  </ul>
+</nav>

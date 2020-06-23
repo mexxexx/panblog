@@ -4,7 +4,7 @@ import configparser
 from . import global_vars
 
 _DEFAULTS = {
-    "GENERAL": {"baseurl": ("", "What is the Base Url of your blog?"),},
+    "GENERAL": {"baseurl": ("/", "What is the Base Url of your blog?"),},
     "DIR": {
         "source": ("src", "Select a source directory."),
         "build": ("bin", "Select a build directory."),
@@ -14,6 +14,7 @@ _DEFAULTS = {
             "Where do you want to keep static include files, e.g. the menu?",
         ),
         "assets": ("assets", "Where do you want to keep assets?"),
+        "templates": ("templates", "Where do you want to keep templates?"),
         "blog": ("blog", "In which directory do you want to keep the blog?"),
         "blogposts": (
             "blog/posts",
@@ -29,13 +30,9 @@ _DEFAULTS = {
         ),
     },
     "BLOG": {
-        "postsperpage" : (
-            "10", "How many posts per page?"
-        ),
-        "maxwordcount" : (
-            "200", "Maximum number of words to display."
-        )
-    }
+        "postsperpage": ("10", "How many posts per page?"),
+        "maxwordcount": ("200", "Maximum number of words to display."),
+    },
 }
 
 
@@ -48,8 +45,11 @@ def create_files(files):
 def check_files(config):
     result = []
 
-    if not os.path.isfile(global_vars._PANBLOGDIR + "/" + global_vars._SITES):
-        result.append(global_vars._PANBLOGDIR + "/" + global_vars._SITES)
+    if not os.path.isfile(global_vars._PANBLOGDIR + "/" + global_vars._PAGES):
+        result.append(global_vars._PANBLOGDIR + "/" + global_vars._PAGES)
+
+    if not os.path.isfile(global_vars._PANBLOGDIR + "/" + global_vars._POSTS):
+        result.append(global_vars._PANBLOGDIR + "/" + global_vars._POSTS)
 
     menu = config["DIR"]["source"] + "/" + config["DIR"]["include"] + "/menu.md"
     if not os.path.isfile(menu):
@@ -141,7 +141,7 @@ def check_config(config):
 
         for k, v in settings.items():
             if section not in config or k not in config[section]:
-                result["vars"].append((k, v))
+                result["vars"].append((section, k, v))
     return result
 
 
@@ -149,7 +149,7 @@ def create_config(config, config_to_add):
     for section in config_to_add["sections"]:
         config[section] = {}
 
-    for k, v in config_to_add["vars"]:
+    for section, k, v in config_to_add["vars"]:
         selection = input('{} ("{}"):'.format(v[1], v[0])).strip()
         if not selection:
             selection = v[0]

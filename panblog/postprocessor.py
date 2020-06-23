@@ -29,11 +29,6 @@ def get_meta_var(soup, name, default=None, delete_tag=True):
     return result
 
 
-def wrap(soup, to_wrap, wrap_in, **args):
-    new_tag = soup.new_tag(wrap_in, **args)
-    to_wrap.wrap(new_tag)
-
-
 def replace(soup, to_replace, replace_with, **args):
     to_replace.name = replace_with
     to_replace.attrs = args
@@ -54,7 +49,12 @@ def postprocess_menu(file):
     soup = read_html(file)
 
     menu = soup.body.ul
-    wrap(soup, menu, "nav", **{"id": "menu"})
+    nav = soup.new_tag("nav", attrs={"id": "menu"})
+    if menu:
+        menu.wrap(nav)
+    else:
+        soup.body.append(nav)
+
     menu = soup.body.nav
 
     with open(file, "w") as f:
@@ -93,10 +93,8 @@ def create_tags(soup, tags, config):
         a = soup.new_tag(
             "a",
             attrs={
-                "href": "{}{}{}.html".format(
-                    config["GENERAL"].get("BaseUrl", ""),
-                    config["GENERAL"].get("BlogTagDirectory", "/"),
-                    tag,
+                "href": "{}{}/{}.html".format(
+                    config["GENERAL"]["baseurl"], config["DIR"]["blogtags"], tag,
                 )
             },
         )

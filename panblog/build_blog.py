@@ -107,6 +107,35 @@ def create_blog_post(post, max_word_count, config):
     return result
 
 
+def create_blog_pages_navigation(page_num, last_page, config):
+    result = ":::::: {#blog_pages_navigation}\n\n"
+
+    result += "::::::::: {#blog_pages_navigation_prev}\n"
+    if not page_num == 1:
+        result += "[&#171; {0}]({1}/page{0}.md){{.prev_blog_page}}\n".format(
+            str(page_num - 1), config["DIR"]["blogpages"]
+        )
+
+    result += ":::::::::\n\n"
+
+    result += (
+        "::::::::: {#blog_pages_navigation_current}\n"
+        + str(page_num)
+        + "\n:::::::::\n\n"
+    )
+
+    result += "::::::::: {#blog_pages_navigation_next}\n"
+    if not last_page:
+        result += "[{0} &#187;]({1}/page{0}.md){{.next_blog_page}}\n".format(
+            str(page_num + 1), config["DIR"]["blogpages"]
+        )
+    result += ":::::::::\n\n"
+
+    result += "::::::\n\n"
+
+    return result
+
+
 def create_blog_preview(posts, page_num, last_page, max_word_count, config):
     result = ""
 
@@ -118,26 +147,16 @@ def create_blog_preview(posts, page_num, last_page, max_word_count, config):
 
     result += ":::\n\n"
 
-    result += '<nav id="blog_preview_page_number">\n\n'
+    result += "::: {#blog_pages_footer}\n\n"
 
-    result += "::: {#blog_preview_page_number_prev}\n"
-    if not page_num == 1:
-        result += "[&#171; {0}]({1}/page{0}.md){{.prev_blog_page}}\n".format(
-            str(page_num - 1), config["DIR"]["blogpages"]
-        )
+    result += create_blog_pages_navigation(page_num, last_page, config)
+
+    result += ":::::: {#blog_pages_tags}\n\n"
+    result += "[Tags]({}/index.md)\n\n".format(config["DIR"]["blogtags"])
+    result += "::::::\n\n"
 
     result += ":::\n\n"
 
-    result += "::: {#blog_preview_page_number_current}\n" + str(page_num) + "\n:::\n\n"
-
-    result += "::: {#blog_preview_page_number_next}\n"
-    if not last_page:
-        result += "[{0} &#187;]({1}/page{0}.md){{.next_blog_page}}\n".format(
-            str(page_num + 1), config["DIR"]["blogpages"]
-        )
-    result += ":::\n\n"
-
-    result += "</nav>\n\n"
     return result
 
 
@@ -174,7 +193,7 @@ def create_blog_pages(
     if posts_per_page < 0:
         num_pages = 1
     else:
-        num_pages = int(math.ceil(len(posts) / posts_per_page))
+        num_pages = max(int(math.ceil(len(posts) / posts_per_page)), 1)
 
     for i in range(num_pages):
         page_num = i + 1
@@ -196,6 +215,15 @@ def create_blog_pages(
         for page_num, page_content in pages
     ]
     return pages
+
+
+def create_tag_index(tags, config):
+    result = '---\ntitle: "Tags"\n---\n\n'
+    result += '<ul class="tags">\n'
+    for tag in tags:
+        result += "<li>[{0}]({1}/{0}.md)</li>\n".format(tag, config["DIR"]["blogtags"])
+    result += "</ul>\n\n"
+    return result
 
 
 def create_tag_page(tag, posts, max_word_count, config):
@@ -223,28 +251,32 @@ def write_pages(pages, build_directory, config):
     for page_num, content in pages:
         filenames = [
             "{0}{1}/page{2}.md".format(
-                build_directory,
-                config["DIR"]["blogpages"],
-                page_num,
+                build_directory, config["DIR"]["blogpages"], page_num,
             )
         ]
         if page_num == 1:
             filenames.append(
-                "{0}{1}/index.md".format(
-                    build_directory, config["DIR"]["blog"]
-                )
+                "{0}{1}/index.md".format(build_directory, config["DIR"]["blog"])
+            )
+            filenames.append(
+                "{0}{1}/index.md".format(build_directory, config["DIR"]["blogpages"])
             )
 
         for filename in filenames:
             with open(filename, "w") as f:
-               f.write(content)
+                f.write(content)
+
+
+def write_tag_index(tag_index, build_directory, config):
+    filename = "{}{}/index.md".format(build_directory, config["DIR"]["blogtags"])
+
+    with open(filename, "w") as f:
+        f.write(tag_index)
 
 
 def write_tag_pages(tag_pages, build_directory, config):
     for tag, content in tag_pages:
-        filename = "{}{}/{}.md".format(
-            build_directory, config["DIR"]["blogtags"], tag
-        )
+        filename = "{}{}/{}.md".format(build_directory, config["DIR"]["blogtags"], tag)
 
         with open(filename, "w") as f:
             f.write(content)
@@ -268,7 +300,9 @@ def main():
     )
     write_pages(pages, build_directory, config)
 
+    tag_index = create_tag_index(tags, config)
     tag_pages = create_tag_pages(tags, max_word_count, config)
+    write_tag_index(tag_index, build_directory, config)
     write_tag_pages(tag_pages, build_directory, config)
 
 

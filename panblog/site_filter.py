@@ -1,4 +1,4 @@
-from pandocfilters import toJSONFilter, Link, Image, stringify
+from pandocfilters import toJSONFilter, Link, Image, Str, walk, stringify, elt
 import re
 import configparser
 
@@ -7,28 +7,17 @@ from . import global_vars
 meta_tags_written = []
 config = None
 
-
-def add_to_meta(meta, where, x):
-    if where not in meta:
-        meta[where] = {
-            "t": "MetaBlocks",
-            "c": [x],
-        }
-    else:
-        meta[where]["c"].append(x)
+MetaBool = elt("MetaBool", 1)
+MetaMap = elt("MetaMap", 1)
+MetaInlines = elt("MetaInlines", 1)
 
 
-def write_meta_tag(meta, name, content):
-    global meta_tags_written
-    if name in meta_tags_written:
-        return
+def get_meta_list(meta, name, default=None):
+    result = meta.get(name, {})
+    if not result or result["t"] != "MetaList":
+        result = default
 
-    result = {
-        "t": "RawBlock",
-        "c": ["html", '<meta name="{}" content="{}" />'.format(name, content),],
-    }
-    add_to_meta(meta, "header-includes", result)
-    meta_tags_written.append(name)
+    return result
 
 
 def get_meta_string(meta, name, default=""):
@@ -43,30 +32,56 @@ def get_meta_string(meta, name, default=""):
     return result
 
 
-def get_meta_bool(meta, name, default=False):
-    result = meta.get(name, {})
-    if result and result["t"] == "MetaBool":
-        result = result["c"]
-    else:
-        result = default
+def walk_menu(k, v, fmt, meta):
+    base_url = meta["base_url"]
+    active_site = meta["active_site"]
 
-    return result
+    if "href" in v:
+        link = v["href"]["c"][0]["c"]
+        if link.endswith(".md"):
+            link = base_url + link[:-3] + ".html"
+            v["href"]["c"][0]["c"] = link
+
+        if active_site and link.endswith(active_site):
+            v["active"] = MetaBool(True)
+
+
+def parse_menu(menu, base_url, active_site):
+    if not menu:
+        return
+    walk(menu, walk_menu, None, {"base_url": base_url, "active_site": active_site})
+
+def create_meta_map(x):
+    c = {}
+    for k, v in x.items():
+        c[k] = MetaInlines([Str(v)])
+    return c
+
+
+def parse_tags(tags, base_url, config):
+    tagsdir = config["DIR"]["blogtags"]
+    if not tags:
+        return
+        
+    for tag in tags["c"]:
+        value = stringify(tag)
+        link = base_url + tagsdir + "/" + value + ".html"
+        tag["t"] = "MetaMap"
+        tag["c"] = create_meta_map({"text" : value, "href" : link})
 
 
 def parse_site(k, v, fmt, meta):
-    ignore_header = get_meta_bool(meta, "ignore-header")
-    write_meta_tag(meta, "IGNORE_HEADER", ignore_header)
-
-    active_site = get_meta_string(meta, "active-site")
-    write_meta_tag(meta, "ACTIVE_SITE", active_site)
-
-    menu_id = get_meta_string(meta, "menu-id", "menu")
-    write_meta_tag(meta, "MENU_ID", menu_id)
-
-    tags = get_meta_string(meta, "tags")
-    write_meta_tag(meta, "TAGS", tags)
-
     base_url = config["GENERAL"]["baseurl"]
+
+    if "MENU" not in meta_tags_written:
+        active_site = get_meta_string(meta, "active-site", None)
+        menu = get_meta_list(meta, "menu")
+        parse_menu(menu, base_url, active_site)
+        meta_tags_written.append("MENU")
+    if "TAGS" not in meta_tags_written:
+        tags = get_meta_list(meta, "tags", None)
+        parse_tags(tags, base_url, config)
+        meta_tags_written.append("TAGS")
 
     if k == "Link":
         title = v[0]

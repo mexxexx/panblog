@@ -34,12 +34,12 @@ configuration = {
     "extras_require": {},
     "entry_points": {
         "console_scripts": [
-            "blog = panblog.__main__:main",
-            "blog_menu_filter = panblog.menu_filter:main",
-            "blog_footer_filter = panblog.footer_filter:main",
-            "blog_site_filter = panblog.site_filter:main",
-            "blog_postprocessor = panblog.postprocessor:main",
-            "blog_build = panblog.build_blog:main",
+            "panblog = panblog.__main__:main",
+            "panblog_menu_filter = panblog.menu_filter:main",
+            "panblog_footer_filter = panblog.footer_filter:main",
+            "panblog_site_filter = panblog.site_filter:main",
+            "panblog_postprocessor = panblog.postprocessor:main",
+            "panblog_build = panblog.build_blog:main",
         ],
     },
 }
