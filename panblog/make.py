@@ -34,10 +34,10 @@ def _create_make_file(pages, posts, blog_pages, config):
 
     blog_pages = [
         (
-            src_dir + blog_dir + "index.md",
+            b["base_file"],
             bin_dir + b["href"],
             bin_dir + b["href"][:-3] + ".html",
-            src_dir + templates_dir + "blog.html",
+            src_dir + templates_dir + b["template"],
         )
         for b in blog_pages
     ]
@@ -141,7 +141,7 @@ def make():
     init.check_init(config)
 
     posts = sites.read_tracked_posts()
-    build_blog.build_blog_pages(posts, config)
+    build_blog.build_blog(posts, config)
 
     reload()
 

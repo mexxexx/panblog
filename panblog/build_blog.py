@@ -87,58 +87,116 @@ def get_short_content(content, max_word_count):
     return short_content
 
 
-def get_tag_list(entries):
+def get_tag_list(posts):
     tags = {}
 
-    for entry in entries:
-        for tag in entry["tags"]:
+    for post in posts:
+        for tag in post["tags"]:
             if tag in tags:
-                tags[tag].append(entry)
+                tags[tag].append(post)
             else:
-                tags[tag] = [entry]
+                tags[tag] = [post]
 
     return tags
 
 
 def create_tag_index(tags, config):
-    result = '---\ntitle: "Tags"\n---\n\n'
-    result += '<ul class="tags">\n'
-    for tag in tags:
-        result += "<li>[{0}]({1}/{0}.md)</li>\n".format(tag, config["DIR"]["blogtags"])
-    result += "</ul>\n\n"
+    base_url = config["GENERAL"]["baseurl"]
+    tags_dir = config["DIR"]["blogtags"] + "/"
+
+    result = '---\ntitle: Tags\n'
+    result += 'tags-list:\n'
+    for tag, _ in tags.items():
+        link = base_url + tags_dir + tag + ".html"
+        result += '  - {{ text : {}, href : {} }}\n'.format(tag, link)
+    result += "---\n"
     return result
 
 
-def create_tag_page(tag, posts, max_word_count, config):
-    result = '---\ntitle: "Tag: {}"\n---\n\n'.format(tag)
-    result += '<div id="blog_posts">\n\n'
-    for i, post in enumerate(posts):
-        if i > 0:
-            result += "--------------\n\n"
-        result += create_blog_post(post, max_word_count, config)
+def create_tag_page(tag_name, posts, config):
+    max_word_count = int(config["BLOG"]["maxwordcount"])
+    base_url = config["GENERAL"]["baseurl"]
+    tags_dir = config["DIR"]["blogtags"] + "/"
+    blog_pages_dir = config["DIR"]["blogpages"] + "/"
 
-    result += "</div>\n\n"
-    return tag, result
+    result = "---\n"
+    result += "title: {}\n".format(tag_name)
+    result += "posts:\n"
+    for post in posts:
+        url = base_url + post["file"][:-3] + ".html"
+        title = post["title"]
+        result += "- id: {}\n".format(url.split("/")[-1][:-5])
+        result += "  url: {}\n".format(url)
+        result += "  title: {}\n".format(title)
+        if post["subtitle"]:
+            result += "  subtitle: {}\n".format(post["subtitle"])
+        result += "  author:\n"
+        for author in post["author"]:
+            result += "  - {}\n".format(author)
+        result += "  date: {}\n".format(post["date"])
+        result += "  tags:\n"
+        for tag in post["tags"]:
+            link = base_url + tags_dir + tag + ".html"
+            result += '  - {{ text : {}, href : {} }}\n'.format(tag, link)
+        content = get_short_content(
+            post["content"], max_word_count
+        ) + " [read more]({})".format(url)
+        result += "  content: |\n{}".format(textwrap.indent(content, "    "))
+        result += "\n"
+    
+    result += "tags-index: {}\n".format(base_url + tags_dir + "index.html")
+    result += "---\n"
+
+    return tag_name, result
 
 
-def create_tag_pages(tags, max_word_count, config):
+def build_tag_pages(posts, config):
     pages = []
 
+    tags = get_tag_list(posts)
+
+    tag_index = create_tag_index(tags, config)
     for tag, posts in tags.items():
-        pages.append(create_tag_page(tag, posts, max_word_count, config))
+        pages.append(create_tag_page(tag, posts, config))
 
-    return pages
+    return tag_index, pages
 
 
-def write_pages(pages, config):
+def write_tag_index(content, config):
+    bin_dir = config["DIR"]["build"] + "/"
+    tags_dir = config["DIR"]["blogtags"] + "/"
+    
+    filename = "{}{}.md".format(tags_dir, "index")
+    filename_bin = "{0}{1}".format(bin_dir, filename)
+
+    sites.add_blog_page(filename, filename_bin, "tag_index.html")
+    with open(filename_bin, "w") as f:
+        f.write(content)
+
+
+def write_tag_pages(tag_pages, config):
+    bin_dir = config["DIR"]["build"] + "/"
+    tags_dir = config["DIR"]["blogtags"] + "/"
+
+    for tag, content in tag_pages:
+        filename = "{}{}.md".format(tags_dir, tag)
+        filename_bin = "{0}{1}".format(bin_dir, filename)
+
+        sites.add_blog_page(filename, filename_bin, "tag.html")
+        with open(filename_bin, "w") as f:
+            f.write(content)
+
+
+def write_blog_pages(pages, config):
+    src_dir = config["DIR"]["source"] + "/"
     bin_dir = config["DIR"]["build"] + "/"
     pages_dir = config["DIR"]["blogpages"] + "/"
     blog_dir = config["DIR"]["blog"] + "/"
 
     filenames_saved = []
-    for page_num, content in enumerate(pages):
-        filenames = ["{}page{}.md".format(pages_dir, page_num + 1,)]
-        if page_num == 0:
+    for page_num, content in pages:
+        filenames = ["{}page{}.md".format(pages_dir, page_num)]
+        if page_num == 1:
             filenames.insert(0, "{}index.md".format(blog_dir))
             filenames.insert(1, "{}index.md".format(pages_dir))
         filenames_saved += filenames
@@ -147,29 +205,12 @@ def write_pages(pages, config):
             with open("{0}{1}".format(bin_dir, filename), "w") as f:
                 f.write(content)
 
-    with open(global_vars._PANBLOGDIR + "/" + global_vars._BLOG_PAGES, "w") as f:
-        pass
-
+    base_file = src_dir + blog_dir + "index.md"
     for f in filenames_saved:
-        sites.add_blog_page(f)
+        sites.add_blog_page(f, base_file)
 
 
-def write_tag_index(tag_index, build_directory, config):
-    filename = "{}{}/index.md".format(build_directory, config["DIR"]["blogtags"])
-
-    with open(filename, "w") as f:
-        f.write(tag_index)
-
-
-def write_tag_pages(tag_pages, build_directory, config):
-    for tag, content in tag_pages:
-        filename = "{}{}/{}.md".format(build_directory, config["DIR"]["blogtags"], tag)
-
-        with open(filename, "w") as f:
-            f.write(content)
-
-
-def create_page(num, num_pages, posts, config):
+def create_blog_page(num, num_pages, posts, config):
     max_word_count = int(config["BLOG"]["maxwordcount"])
     base_url = config["GENERAL"]["baseurl"]
     tags_dir = config["DIR"]["blogtags"] + "/"
@@ -192,7 +233,7 @@ def create_page(num, num_pages, posts, config):
         result += "  tags:\n"
         for tag in post["tags"]:
             link = base_url + tags_dir + tag + ".html"
-            result += '  - {{ "text" : {}, "href" : {} }}\n'.format(tag, link)
+            result += '  - {{ text : {}, href : {} }}\n'.format(tag, link)
         content = get_short_content(
             post["content"], max_word_count
         ) + " [read more]({})".format(url)
@@ -201,17 +242,21 @@ def create_page(num, num_pages, posts, config):
 
     if num >= 2:
         result += "prev-page:\n"
-        result += "  num: {0}\n  href: {1}page{0}.html\n".format(num - 1, base_url + blog_pages_dir)
+        result += "  num: {0}\n  href: {1}page{0}.html\n".format(
+            num - 1, base_url + blog_pages_dir
+        )
     result += "current-page:\n".format()
     result += "  num: {0}\n".format(num)
     if num < num_pages:
         result += "next-page:\n"
-        result += "  num: {0}\n  href: {1}page{0}.html\n".format(num + 1, base_url + blog_pages_dir)
+        result += "  num: {0}\n  href: {1}page{0}.html\n".format(
+            num + 1, base_url + blog_pages_dir
+        )
     result += "tags-index: {}\n".format(base_url + tags_dir + "index.html")
 
     result += "---\n"
 
-    return result
+    return num, result
 
 
 def build_blog_pages(posts, config):
@@ -226,19 +271,38 @@ def build_blog_pages(posts, config):
     base_url = config["GENERAL"]["baseurl"]
 
     num_pages = max(1, int(math.ceil(len(posts) / posts_per_page)))
+
+    if num_pages == 1:
+        pages = [slice(None)]
+    else:
+        pages = [
+            slice(i * posts_per_page, (i + 1) * posts_per_page)
+            for i in range(num_pages)
+        ]
+
+    pages = [
+        create_blog_page(i + 1, num_pages, posts[p], config)
+        for i, p in enumerate(pages)
+    ]
+
+    return pages
+
+
+def build_blog(posts, config):
+    src_dir = config["DIR"]["source"] + "/"
+    post_dir = config["DIR"]["blogposts"] + "/"
+
     posts_parsed = [
         parse_blog_post(src_dir + post_dir + post["href"]) for post in posts
     ]
     posts_parsed.sort(key=lambda x: x["date"], reverse=True)
 
-    pages = [
-        slice(i * posts_per_page, (i + 1) * posts_per_page) for i in range(num_pages)
-    ]
-    if num_pages == 1:
-        pages = [slice(None)]
-    pages = [
-        create_page(i + 1, num_pages, posts_parsed[p], config)
-        for i, p in enumerate(pages)
-    ]
+    blog_pages = build_blog_pages(posts_parsed, config)
+    tag_index, tag_pages = build_tag_pages(posts_parsed, config)
 
-    write_pages(pages, config)
+    with open(global_vars._PANBLOGDIR + "/" + global_vars._BLOG_PAGES, "w") as f:
+        pass
+
+    write_blog_pages(blog_pages, config)
+    write_tag_index(tag_index, config)
+    write_tag_pages(tag_pages, config)

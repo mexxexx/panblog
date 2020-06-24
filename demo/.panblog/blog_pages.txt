@@ -1,4 +1,9 @@
-blog/index.md;blog.html
-blog/pages/index.md;blog.html
-blog/pages/page1.md;blog.html
-blog/pages/page2.md;blog.html
+href;base_file;template
+blog/index.md;src/blog/index.md;blog.html
+blog/pages/index.md;src/blog/index.md;blog.html
+blog/pages/page1.md;src/blog/index.md;blog.html
+blog/pages/page2.md;src/blog/index.md;blog.html
+blog/tags/index.md;bin/blog/tags/index.md;tag_index.html
+blog/tags/tag1.md;bin/blog/tags/tag1.md;tag.html
+blog/tags/tag2.md;bin/blog/tags/tag2.md;tag.html
+blog/tags/tag3.md;bin/blog/tags/tag3.md;tag.html

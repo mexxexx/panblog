@@ -6,8 +6,8 @@ posts:
   author:
   date: 21-06-2020 10:41
   tags:
-  - { "text" : tag1, "href" : /blog/tags/tag1.html }
-  - { "text" : tag2, "href" : /blog/tags/tag2.html }
+  - { text : tag1, href : /blog/tags/tag1.html }
+  - { text : tag2, href : /blog/tags/tag2.html }
   content: |
     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
 

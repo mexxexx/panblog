@@ -7,7 +7,7 @@ def read_tracked_pages():
         lines = f.read().splitlines()
 
     pages = []
-    for line in lines:
+    for line in lines[1:]:
         values = line.split(";")
         pages.append({"href": values[0], "template": values[1]})
     return pages
@@ -18,7 +18,7 @@ def read_tracked_posts():
         lines = f.read().splitlines()
 
     posts = []
-    for line in lines:
+    for line in lines[1:]:
         values = line.split(";")
         posts.append({"href": values[0], "template": values[1]})
     return posts
@@ -29,14 +29,14 @@ def read_tracked_blog_pages():
         lines = f.read().splitlines()
 
     pages = []
-    for line in lines:
+    for line in lines[1:]:
         values = line.split(";")
-        pages.append({"href": values[0], "template": values[1]})
+        pages.append({"href": values[0], "base_file": values[1], "template": values[2]})
     return pages
 
 
 def _write_tracked_pages(pages):
-    s = ""
+    s = "href;template\n"
     for page in pages:
         s += page["href"] + ";" + page["template"] + "\n"
 
@@ -45,7 +45,7 @@ def _write_tracked_pages(pages):
 
 
 def _write_tracked_posts(posts):
-    s = ""
+    s = "href;template\n"
     for post in posts:
         s += post["href"] + ";" + post["template"] + "\n"
 
@@ -54,9 +54,9 @@ def _write_tracked_posts(posts):
 
 
 def _write_tracked_blog_pages(pages):
-    s = ""
+    s = "href;base_file;template\n"
     for page in pages:
-        s += page["href"] + ";" + page["template"] + "\n"
+        s += page["href"] + ";" + page["base_file"] + ";" + page["template"] + "\n"
 
     with open(global_vars._PANBLOGDIR + "/" + global_vars._BLOG_PAGES, "w") as f:
         f.write(s)
@@ -84,12 +84,12 @@ def add_post(post, template="post.html"):
     _write_tracked_posts(posts)
 
 
-def add_blog_page(page, template="blog.html"):
+def add_blog_page(page, base_file, template="blog.html"):
     if isinstance(page, list):
         page = page[0]
     blog_pages = read_tracked_blog_pages()
     if page not in [p["href"] for p in blog_pages]:
-        blog_pages.append({"href": page, "template": template})
+        blog_pages.append({"href": page, "base_file": base_file, "template": template})
     else:
         raise ValueError("{} is already a tracked page.".format(page))
     _write_tracked_blog_pages(blog_pages)

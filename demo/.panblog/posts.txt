@@ -1,3 +1,4 @@
-entry1.md;post.html
+href;template
 entry2.md;post.html
 entry3.md;post.html
+entry1.md;post.html
