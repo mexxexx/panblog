@@ -19,11 +19,11 @@ def main():
                 sites.list_files()
                 sys.exit(0)
             elif action == "page":
-                sites.add_pages(args[1:])
+                sites.add_page(args[1:])
                 make.reload()
                 sys.exit(0)
             elif action == "post":
-                sites.add_posts(args[1:])
+                sites.add_post(args[1:])
                 make.reload()
                 sys.exit(0)
             elif action == "remove":

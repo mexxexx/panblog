@@ -1,0 +1,4 @@
+blog/index.md;blog.html
+blog/pages/index.md;blog.html
+blog/pages/page1.md;blog.html
+blog/pages/page2.md;blog.html

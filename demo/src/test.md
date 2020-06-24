@@ -1,7 +1,7 @@
 ---
-title: "Test"
+title: Test
 date: 21-01-2020 10:45
-active-site: "test.html"
+active-site: /test.html
 ---
 
 <p style="margin-top: 5em">How about a page without a title?</p>

@@ -42,7 +42,7 @@ def walk_menu(k, v, fmt, meta):
             link = base_url + link[:-3] + ".html"
             v["href"]["c"][0]["c"] = link
 
-        if active_site and link.endswith(active_site):
+        if active_site and link == active_site:
             v["active"] = MetaBool(True)
 
 
@@ -50,6 +50,7 @@ def parse_menu(menu, base_url, active_site):
     if not menu:
         return
     walk(menu, walk_menu, None, {"base_url": base_url, "active_site": active_site})
+
 
 def create_meta_map(x):
     c = {}
@@ -62,12 +63,12 @@ def parse_tags(tags, base_url, config):
     tagsdir = config["DIR"]["blogtags"]
     if not tags:
         return
-        
+
     for tag in tags["c"]:
         value = stringify(tag)
         link = base_url + tagsdir + "/" + value + ".html"
         tag["t"] = "MetaMap"
-        tag["c"] = create_meta_map({"text" : value, "href" : link})
+        tag["c"] = create_meta_map({"text": value, "href": link})
 
 
 def parse_site(k, v, fmt, meta):

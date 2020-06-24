@@ -24,6 +24,17 @@ def read_tracked_posts():
     return posts
 
 
+def read_tracked_blog_pages():
+    with open(global_vars._PANBLOGDIR + "/" + global_vars._BLOG_PAGES, "r") as f:
+        lines = f.read().splitlines()
+
+    pages = []
+    for line in lines:
+        values = line.split(";")
+        pages.append({"href": values[0], "template": values[1]})
+    return pages
+
+
 def _write_tracked_pages(pages):
     s = ""
     for page in pages:
@@ -42,28 +53,46 @@ def _write_tracked_posts(posts):
         f.write(s)
 
 
-def add_pages(files):
-    if not isinstance(files, list):
-        files = [files]
-    pages = read_tracked_pages()
-    for f in files:
-        if f not in pages:
-            pages.append({"href": f, "template": "page.html"})
-        else:
-            raise ValueError("{} is already a tracked page.".format(f))
+def _write_tracked_blog_pages(pages):
+    s = ""
+    for page in pages:
+        s += page["href"] + ";" + page["template"] + "\n"
+
+    with open(global_vars._PANBLOGDIR + "/" + global_vars._BLOG_PAGES, "w") as f:
+        f.write(s)
+
+
+def add_page(page, template="page.html"):
+    if isinstance(page, list):
+        page = page[0]
+    page = read_tracked_pages()
+    if page not in [p["href"] for p in pages]:
+        pages.append({"href": page, "template": template})
+    else:
+        raise ValueError("{} is already a tracked page.".format(f))
     _write_tracked_pages(pages)
 
 
-def add_posts(files):
-    if not isinstance(files, list):
-        files = [files]
+def add_post(post, template="post.html"):
+    if isinstance(post, list):
+        post = post[0]
     posts = read_tracked_posts()
-    for f in files:
-        if f not in posts:
-            posts.append({"href": f, "template": "post.html"})
-        else:
-            raise ValueError("{} is already a tracked page.".format(f))
+    if post not in [p["href"] for p in posts]:
+        posts.append({"href": post, "template": template})
+    else:
+        raise ValueError("{} is already a tracked page.".format(post))
     _write_tracked_posts(posts)
+
+
+def add_blog_page(page, template="blog.html"):
+    if isinstance(page, list):
+        page = page[0]
+    blog_pages = read_tracked_blog_pages()
+    if page not in [p["href"] for p in blog_pages]:
+        blog_pages.append({"href": page, "template": template})
+    else:
+        raise ValueError("{} is already a tracked page.".format(page))
+    _write_tracked_blog_pages(blog_pages)
 
 
 def remove(files):
@@ -72,16 +101,20 @@ def remove(files):
 
     pages = read_tracked_pages()
     posts = read_tracked_posts()
+    blog_pages = read_tracked_blog_pages()
     for f in files:
         if f in pages:
             pages.remove(f)
         elif f in posts:
             posts.remove(f)
+        elif f in blog_pages:
+            blog_pages.remove(f)
         else:
             raise ValueError("{} is not a tracked site.".format(f))
 
     _write_tracked_pages(pages)
     _write_tracked_posts(posts)
+    _write_tracked_blog_pages(blog_pages)
 
 
 def list_files():

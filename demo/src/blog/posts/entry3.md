@@ -1,5 +1,5 @@
 ---
-title: "Entry 3"
+title: Entry 3
 date: 20-06-2020 10:41
 ---
 

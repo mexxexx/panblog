@@ -3,8 +3,10 @@ import sys
 import re
 import datetime
 import math
+import textwrap
 
 from . import global_vars
+from . import sites
 
 
 def parse_blog_post(file):
@@ -14,55 +16,64 @@ def parse_blog_post(file):
     lines = content.splitlines()
     in_header = lines[0].startswith("---")
 
-    title = None
-    date = None
-    content = ""
-    tags = []
+    result = {
+        "file": file.split("/", 1)[1],
+        "title": None,
+        "author": [],
+        "subtitle": None,
+        "date": None,
+        "tags": [],
+        "content": "",
+    }
+
+    intags = False
     for i, line in enumerate(lines):
         if in_header:
-            m = re.search('title[ ]*:[ ]*"(.*)"', line)
+            m = re.search("title[ ]*:[ ]*(.*)", line)
             if m:
-                title = m.group(1)
+                result["title"] = m.group(1)
+
+            m = re.search("subtitle[ ]*:[ ]*(.*)", line)
+            if m:
+                result["subtitle"] = m.group(1)
+
+            m = re.search("author[ ]*:[ ]*(.*)", line)
+            if m:
+                result["author"].append(m.group(1))
 
             m = re.search("date[ ]*:[ ]*(.*)", line)
             if m:
-                date = m.group(1)
+                result["date"] = m.group(1)
 
-            m = re.search('tags[ ]*:[ ]*"(.*)"', line)
+            if intags:
+                m = re.search("- (.*)", line)
+                if m:
+                    result["tags"].append(m.group(1))
+                elif line.strip():
+                    intags = False
+
+            m = re.search("tags[ ]*:", line)
             if m:
-                tags = m.group(1)
-                tags = [tag.strip() for tag in tags.split(";") if tag.strip()]
+                intags = True
 
             if i > 0:
                 in_header = not line.startswith("---")
         else:
-            content += line + "\n"
+            result["content"] += line + "\n"
 
-    if not title:
+    if not result["title"]:
         raise AttributeError(
             "Blog post {} has no title info. ".format(file)
             + 'Please specify a title with the "title: ..." attribute.'
         )
-    elif not date:
+    elif not result["date"]:
         raise AttributeError(
             "Blog post {} has no date info. ".format(file)
             + 'Please specify a date with the "date: ..." attribute.'
         )
 
-    return {
-        "file": file.split("/", 1)[1],
-        "title": title,
-        "date": date,
-        "tags": tags,
-        "content": content.strip(),
-    }
-
-
-def parse_blog_preview_template(file):
-    with open(file, "r") as f:
-        content = f.read()
-
-    return content
+    result["content"] = result["content"].strip()
+    return result
 
 
 def get_short_content(content, max_word_count):
@@ -76,103 +87,6 @@ def get_short_content(content, max_word_count):
     return short_content
 
 
-def create_blog_post(post, max_word_count, config):
-    title = post["title"]
-    date = post["date"]
-    content = post["content"]
-    link = post["file"]
-    tags = post["tags"]
-
-    result = ""
-    result += "## [{}]({}) {{.blog_post_preview}}\n\n".format(title, link)
-
-    result += '<p class="date">'
-    if date is not None:
-        result += date
-    result += "</p>\n\n"
-
-    if tags:
-        result += '<ul class="tags">\n'
-        for tag in tags:
-            result += "<li>[{0}]({1}/{0}.md)</li>\n".format(
-                tag, config["DIR"]["blogtags"]
-            )
-        result += "</ul>\n\n"
-
-    content = get_short_content(
-        content, max_word_count
-    ) + " [read more]({})\n\n".format(link)
-
-    result += content
-    return result
-
-
-def create_blog_pages_navigation(page_num, last_page, config):
-    result = ":::::: {#blog_pages_navigation}\n\n"
-
-    result += "::::::::: {#blog_pages_navigation_prev}\n"
-    if not page_num == 1:
-        result += "[&#171; {0}]({1}/page{0}.md){{.prev_blog_page}}\n".format(
-            str(page_num - 1), config["DIR"]["blogpages"]
-        )
-
-    result += ":::::::::\n\n"
-
-    result += (
-        "::::::::: {#blog_pages_navigation_current}\n"
-        + str(page_num)
-        + "\n:::::::::\n\n"
-    )
-
-    result += "::::::::: {#blog_pages_navigation_next}\n"
-    if not last_page:
-        result += "[{0} &#187;]({1}/page{0}.md){{.next_blog_page}}\n".format(
-            str(page_num + 1), config["DIR"]["blogpages"]
-        )
-    result += ":::::::::\n\n"
-
-    result += "::::::\n\n"
-
-    return result
-
-
-def create_blog_preview(posts, page_num, last_page, max_word_count, config):
-    result = ""
-
-    result += "::: {#blog_posts}\n"
-    for i, post in enumerate(posts):
-        if i > 0:
-            result += "--------------\n\n"
-        result += create_blog_post(post, max_word_count, config)
-
-    result += ":::\n\n"
-
-    result += "::: {#blog_pages_footer}\n\n"
-
-    result += create_blog_pages_navigation(page_num, last_page, config)
-
-    result += ":::::: {#blog_pages_tags}\n\n"
-    result += "[Tags]({}/index.md)\n\n".format(config["DIR"]["blogtags"])
-    result += "::::::\n\n"
-
-    result += ":::\n\n"
-
-    return result
-
-
-def insert_blog_preview(template, content):
-    return template.replace('<div id="blog_previews" />', content)
-
-
-def get_blog_posts():
-    posts = []
-    if len(sys.argv) >= 4:
-        for f in sys.argv[3:]:
-            posts.append(parse_blog_post(f))
-    posts.sort(key=lambda x: x["date"], reverse=True)
-    return posts
-
-
 def get_tag_list(entries):
     tags = {}
 
@@ -184,37 +98,6 @@ def get_tag_list(entries):
                 tags[tag] = [entry]
 
     return tags
-
-
-def create_blog_pages(
-    posts, blog_preview_template, posts_per_page, max_word_count, config
-):
-    pages = []
-    if posts_per_page < 0:
-        num_pages = 1
-    else:
-        num_pages = max(int(math.ceil(len(posts) / posts_per_page)), 1)
-
-    for i in range(num_pages):
-        page_num = i + 1
-        pages.append(
-            (
-                page_num,
-                create_blog_preview(
-                    posts=posts[i * posts_per_page : (i + 1) * posts_per_page],
-                    page_num=page_num,
-                    last_page=page_num == num_pages,
-                    max_word_count=max_word_count,
-                    config=config,
-                ),
-            )
-        )
-
-    pages = [
-        (page_num, insert_blog_preview(blog_preview_template, page_content))
-        for page_num, page_content in pages
-    ]
-    return pages
 
 
 def create_tag_index(tags, config):
@@ -247,24 +130,28 @@ def create_tag_pages(tags, max_word_count, config):
     return pages
 
 
-def write_pages(pages, build_directory, config):
-    for page_num, content in pages:
-        filenames = [
-            "{0}{1}/page{2}.md".format(
-                build_directory, config["DIR"]["blogpages"], page_num,
-            )
-        ]
-        if page_num == 1:
-            filenames.append(
-                "{0}{1}/index.md".format(build_directory, config["DIR"]["blog"])
-            )
-            filenames.append(
-                "{0}{1}/index.md".format(build_directory, config["DIR"]["blogpages"])
-            )
+def write_pages(pages, config):
+    bin_dir = config["DIR"]["build"] + "/"
+    pages_dir = config["DIR"]["blogpages"] + "/"
+    blog_dir = config["DIR"]["blog"] + "/"
+
+    filenames_saved = []
+    for page_num, content in enumerate(pages):
+        filenames = ["{}page{}.md".format(pages_dir, page_num + 1,)]
+        if page_num == 0:
+            filenames.insert(0, "{}index.md".format(blog_dir))
+            filenames.insert(1, "{}index.md".format(pages_dir))
+        filenames_saved += filenames
 
         for filename in filenames:
-            with open(filename, "w") as f:
+            with open("{0}{1}".format(bin_dir, filename), "w") as f:
                 f.write(content)
+
+    with open(global_vars._PANBLOGDIR + "/" + global_vars._BLOG_PAGES, "w") as f:
+        pass
+
+    for f in filenames_saved:
+        sites.add_blog_page(f)
 
 
 def write_tag_index(tag_index, build_directory, config):
@@ -282,29 +169,76 @@ def write_tag_pages(tag_pages, build_directory, config):
             f.write(content)
 
 
-def main():
-    config = configparser.ConfigParser()
-    config.read(global_vars._CONFIG)
+def create_page(num, num_pages, posts, config):
+    max_word_count = int(config["BLOG"]["maxwordcount"])
+    base_url = config["GENERAL"]["baseurl"]
+    tags_dir = config["DIR"]["blogtags"] + "/"
+    blog_pages_dir = config["DIR"]["blogpages"] + "/"
 
-    posts_per_page = int(config["BLOG"].get("PostsPerPage", "-1"))
-    max_word_count = int(config["BLOG"].get("MaxWordCount", "-1"))
-    build_directory = sys.argv[1]
+    result = "---\n"
+    result += "posts:\n"
+    for post in posts:
+        url = base_url + post["file"][:-3] + ".html"
+        title = post["title"]
+        result += "- id: {}\n".format(url.split("/")[-1][:-5])
+        result += "  url: {}\n".format(url)
+        result += "  title: {}\n".format(title)
+        if post["subtitle"]:
+            result += "  subtitle: {}\n".format(post["subtitle"])
+        result += "  author:\n"
+        for author in post["author"]:
+            result += "  - {}\n".format(author)
+        result += "  date: {}\n".format(post["date"])
+        result += "  tags:\n"
+        for tag in post["tags"]:
+            link = base_url + tags_dir + tag + ".html"
+            result += '  - {{ "text" : {}, "href" : {} }}\n'.format(tag, link)
+        content = get_short_content(
+            post["content"], max_word_count
+        ) + " [read more]({})".format(url)
+        result += "  content: |\n{}".format(textwrap.indent(content, "    "))
+        result += "\n\n"
 
-    blog_preview_template = parse_blog_preview_template(sys.argv[2])
+    if num >= 2:
+        result += "prev-page:\n"
+        result += "  num: {0}\n  href: {1}page{0}.html\n".format(num - 1, base_url + blog_pages_dir)
+    result += "current-page:\n".format()
+    result += "  num: {0}\n".format(num)
+    if num < num_pages:
+        result += "next-page:\n"
+        result += "  num: {0}\n  href: {1}page{0}.html\n".format(num + 1, base_url + blog_pages_dir)
+    result += "tags-index: {}\n".format(base_url + tags_dir + "index.html")
 
-    blog_posts = get_blog_posts()
-    tags = get_tag_list(blog_posts)
+    result += "---\n"
 
-    pages = create_blog_pages(
-        blog_posts, blog_preview_template, posts_per_page, max_word_count, config
-    )
-    write_pages(pages, build_directory, config)
-
-    tag_index = create_tag_index(tags, config)
-    tag_pages = create_tag_pages(tags, max_word_count, config)
-    write_tag_index(tag_index, build_directory, config)
-    write_tag_pages(tag_pages, build_directory, config)
+    return result
 
 
-if __name__ == "__main__":
-    main()
+def build_blog_pages(posts, config):
+    posts_per_page = int(config["BLOG"]["postsperpage"])
+    max_word_count = int(config["BLOG"]["maxwordcount"])
+
+    src_dir = config["DIR"]["source"] + "/"
+    bin_dir = config["DIR"]["build"] + "/"
+    post_dir = config["DIR"]["blogposts"] + "/"
+    pages_dir = config["DIR"]["blogpages"] + "/"
+
+    base_url = config["GENERAL"]["baseurl"]
+
+    num_pages = max(1, int(math.ceil(len(posts) / posts_per_page)))
+    posts_parsed = [
+        parse_blog_post(src_dir + post_dir + post["href"]) for post in posts
+    ]
+    posts_parsed.sort(key=lambda x: x["date"], reverse=True)
+
+    pages = [
+        slice(i * posts_per_page, (i + 1) * posts_per_page) for i in range(num_pages)
+    ]
+    if num_pages == 1:
+        pages = [slice(None)]
+    pages = [
+        create_page(i + 1, num_pages, posts_parsed[p], config)
+        for i, p in enumerate(pages)
+    ]
+
+    write_pages(pages, config)

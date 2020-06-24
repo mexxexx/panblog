@@ -1,9 +1,13 @@
+import subprocess
+import sys
+
 from . import sites
 from . import init
 from . import global_vars
+from . import build_blog
 
 
-def _create_make_file(pages, posts, config):
+def _create_make_file(pages, posts, blog_pages, config):
     panblog_posts_file = global_vars._PANBLOGDIR + "/" + global_vars._POSTS
 
     src_dir = config["DIR"]["source"] + "/"
@@ -26,6 +30,16 @@ def _create_make_file(pages, posts, config):
             src_dir + templates_dir + page["template"],
         )
         for page in pages
+    ]
+
+    blog_pages = [
+        (
+            src_dir + blog_dir + "index.md",
+            bin_dir + b["href"],
+            bin_dir + b["href"][:-3] + ".html",
+            src_dir + templates_dir + "blog.html",
+        )
+        for b in blog_pages
     ]
 
     posts = [
@@ -51,33 +65,16 @@ def _create_make_file(pages, posts, config):
     css_src = src_dir + css
     css_bin = bin_dir + css
 
-    # blog/index.md
-    # blog_index = blog_dir + "index.md"
-    # blog_index_src = src_dir + blog_index
-    # blog_index_bin = bin_dir + blog_index
-
-    # blog/pages/%.html
-    # blog_pages_src = bin_dir + blog_pages_dir + "%.md"
-    # blog_pages_bin = blog_pages_src[:-3] + ".html"
-
-    # blog/tags/%.html
-    # blog_tags_src = bin_dir + blog_tags_dir + "%.md"
-    # blog_tags_bin = blog_tags_src[:-3] + ".html"
-
-    # blog_wildcards_src = [blog_index_bin, blog_pages_src, blog_tags_src]
-    # blog_wildcards_bin = [
-    #    blog_index_bin[:-3] + ".html",
-    #    blog_pages_bin,
-    #    blog_tags_bin,
-    # ]
-
     makefile = ""
 
     makefile += f"ASSETS_SRC = $(wildcard {src_dir}{asset_dir}*)\n"
     makefile += f"ASSETS_BUILD = $(foreach asset, $(ASSETS_SRC), $(patsubst {src_dir}%,{bin_dir}%,$(asset)))\n\n"
 
-    makefile += f"PAGES_BUILD = {' '.join([page[1] for page in pages])}\n\n"
+    makefile += f"PAGES_BUILD = {' '.join([page[1] for page in pages])}\n"
     makefile += f"POSTS_BUILD = {' '.join([post[1] for post in posts])}\n\n"
+
+    makefile += f"BLOG_PAGES_SRC = {' '.join([b[1] for b in blog_pages])}\n\n"
+    makefile += f"BLOG_PAGES_BUILD = {' '.join([b[2] for b in blog_pages])}\n\n"
 
     # Targets
     makefile += "all: assets html\n\n"
@@ -86,7 +83,7 @@ def _create_make_file(pages, posts, config):
     makefile += f"{bin_dir}{asset_dir}%: {src_dir}{asset_dir}%\n"
     makefile += "\tcp $^ $@\n\n"
 
-    makefile += f"html: {css_bin} {footer_bin} $(PAGES_BUILD) $(POSTS_BUILD)\n\n"
+    makefile += f"html: {css_bin} {footer_bin} $(PAGES_BUILD) $(POSTS_BUILD) $(BLOG_PAGES_BUILD)\n\n"
 
     makefile += f"{css_bin}: {css_src}\n"
     makefile += "\tcp $^ $@\n\n"
@@ -100,12 +97,11 @@ def _create_make_file(pages, posts, config):
 
     for src_file, bin_file, template in posts:
         makefile += f"{bin_file}: {src_file} {menu_src} {footer_bin}\n"
-        makefile += f"\tpandoc -o $@ -s $< --filter panblog_site_filter --css={base_url + css} --metadata-file {menu_src} -A {footer_bin} --section-divs --template {template} --metadata active-site={blog_dir}index.html\n\n"
+        makefile += f"\tpandoc -o $@ -s $< --filter panblog_site_filter --css={base_url + css} --metadata-file {menu_src} -A {footer_bin} --section-divs --template {template} --metadata active-site={base_url}{blog_dir}index.html\n\n"
 
-    # for o_bin, o_src in zip(posts_bin, posts_src):
-    #    makefile += f"{o_bin}: {o_src} {menu_bin} {footer_bin}\n"
-    #    makefile += f'\tpandoc -o $@ -s $< --filter panblog_site_filter --css={css} -B $(word 2,$^) -A $(word 3,$^) --section-divs --metadata active-site="{blog_index[:-3]}.html" \n'
-    #    makefile += "\tpanblog_postprocessor site $@\n\n"
+    for boilerplate, src_file, bin_file, template in blog_pages:
+        makefile += f"{bin_file}: {boilerplate} {src_file} {menu_src} {footer_bin}\n"
+        makefile += f"\tpandoc -o $@ -s $< --filter panblog_site_filter --css={base_url + css} --metadata-file {menu_src} --metadata-file {src_file} -A {footer_bin} --section-divs --template {template} --metadata active-site={base_url}{blog_dir}index.html\n\n"
 
     # for o_bin, o_src in zip(blog_wildcards_bin, blog_wildcards_src):
     #    makefile += f"{o_bin}: {o_src} {menu_bin} {footer_bin}\n"
@@ -120,10 +116,10 @@ def _create_make_file(pages, posts, config):
     makefile += ".PHONY: clean clean_all\n\n"
 
     makefile += "clean:\n"
-    makefile += f"\trm -f {footer_bin}\n\n"
+    makefile += f"\trm -f {footer_bin} $(BLOG_PAGES_SRC)\n\n"
 
     makefile += "clean_all: clean\n"
-    makefile += f"\trm -f {css_bin} $(ASSETS_BUILD) $(PAGES_BUILD) $(POSTS_BUILD)"
+    makefile += f"\trm -f {css_bin} $(ASSETS_BUILD) $(PAGES_BUILD) $(POSTS_BUILD) $(BLOG_PAGES_BUILD)"
 
     # print(makefile)
     with open(global_vars._MAKEFILE, "w") as f:
@@ -135,10 +131,22 @@ def reload():
     init.check_init(config)
     pages = sites.read_tracked_pages()
     posts = sites.read_tracked_posts()
+    blog_pages = sites.read_tracked_blog_pages()
 
-    _create_make_file(pages, posts, config)
+    _create_make_file(pages, posts, blog_pages, config)
 
 
 def make():
     config = init.load_config()
     init.check_init(config)
+
+    posts = sites.read_tracked_posts()
+    build_blog.build_blog_pages(posts, config)
+
+    reload()
+
+    process = subprocess.Popen(
+        ["make", "assets", "html"], stderr=subprocess.STDOUT, stdout=subprocess.PIPE
+    )
+    for line in iter(process.stdout.readline, b""):
+        sys.stdout.write(line.decode(sys.stdout.encoding))

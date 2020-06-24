@@ -39,33 +39,20 @@ ${ menu() }
 $if(title)$
 <header id="title-block-header">
   <h1 class="title">$title$</h1>
-$if(subtitle)$
-  <p class="subtitle">$subtitle$</p>
-$endif$
-$for(author)$
-  <p class="author">$author$</p>
-$endfor$
-$if(date)$
-  <p class="date">$date$</p>
-$endif$
-$if(tags)$
-  <ul class="tags">
-$for(tags)$
-    <li><a href="$it.href$">$it.text$</a></li>
-$endfor$
-  </ul>
-$endif$
 </header>
 $endif$
-$if(toc)$
-<nav id="$idprefix$TOC" role="doc-toc">
-$if(toc-title)$
-<h2 id="$idprefix$toc-title">$toc-title$</h2>
-$endif$
-$table-of-contents$
-</nav>
-$endif$
 $body$
+<section id="post_previews">
+  ${ posts:post_preview()[<hr />]}
+</section>
+<div id="blog_pages_footer">
+  <div id="blog_pages_navigation">
+    <div class="prev">$if(prev-page)$<a href="$prev-page.href$">&laquo $prev-page.num$</a>$endif$</div>
+    <div class="current">$if(current-page)$$current-page.num$$endif$</div>
+    <div class="next">$if(next-page)$<a href="$next-page.href$">$next-page.num$ &raquo</a>$endif$</div>
+  </div>
+  <div id="blog_pages_tags"><p><a href="$tags-index$">View all tags</a></p></div>
+</div>
 <footer>
 $for(include-after)$
   $include-after$

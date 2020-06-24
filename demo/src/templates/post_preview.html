@@ -1,0 +1,25 @@
+$if(it.title)$
+<div id="$it.id$" class="blog_post_preview">
+  <h2 class="title"><a href="$it.url$">$it.title$</a></h2>
+$if(it.subtitle)$
+  <p class="subtitle">$it.subtitle$</p>
+$endif$
+$if(it.author)$
+$for(it.author)$
+  <p class="author">$it.author$</p>
+$endfor$
+$endif$
+$if(it.date)$
+  <p class="date">$it.date$</p>
+$endif$
+$if(it.tags)$
+  <ul class="tags">
+$for(it.tags)$
+    <li><a href="$it.tags.href$">$it.tags.text$</a></li>
+$endfor$
+  </ul>
+$endif$
+
+  $it.content$
+</div>
+$endif$

@@ -1,6 +1,6 @@
 ---
 title: Home
-active-site: "index.html"
+active-site: /index.html
 ---
 
 # Home

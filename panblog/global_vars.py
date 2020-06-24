@@ -4,3 +4,4 @@ _MAKEFILE = "makefile"
 
 _PAGES = "pages.txt"
 _POSTS = "posts.txt"
+_BLOG_PAGES = "blog_pages.txt"
