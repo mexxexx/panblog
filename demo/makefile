@@ -62,10 +62,13 @@ bin/blog/tags/tag2.html: bin/blog/tags/tag2.md bin/blog/tags/tag2.md src/include
 bin/blog/tags/tag3.html: bin/blog/tags/tag3.md bin/blog/tags/tag3.md src/include/menu.md bin/include/footer.html
 	pandoc -o $@ -s $< --filter panblog_site_filter --css=/css/style.css --metadata-file src/include/menu.md --metadata-file bin/blog/tags/tag3.md -A bin/include/footer.html --section-divs --template src/templates/tag.html --metadata active-site=/blog/index.html
 
-.PHONY: clean clean_all
+.PHONY: clean clean_blog clean_all
 
-clean:
-	rm -f bin/include/footer.html $(BLOG_PAGES_SRC)
+clean_blog:
+	rm -f $(BLOG_PAGES_SRC)
+
+clean: clean_blog
+	rm -f bin/include/footer.html
 
 clean_all: clean
 	rm -f bin/css/style.css $(ASSETS_BUILD) $(PAGES_BUILD) $(POSTS_BUILD) $(BLOG_PAGES_BUILD)

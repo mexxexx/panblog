@@ -113,10 +113,13 @@ def _create_make_file(pages, posts, blog_pages, config):
     # makefile += f"{blog_index_bin}: {blog_index_src} {' '.join(posts_src)} {panblog_posts_file}\n"
     # makefile += f"\tpanblog_bin {bin_dir} $(wordlist 1,{len(posts_src) + 1},$^)\n\n"
 
-    makefile += ".PHONY: clean clean_all\n\n"
+    makefile += ".PHONY: clean clean_blog clean_all\n\n"
 
-    makefile += "clean:\n"
-    makefile += f"\trm -f {footer_bin} $(BLOG_PAGES_SRC)\n\n"
+    makefile += "clean_blog:\n"
+    makefile += f"\trm -f $(BLOG_PAGES_SRC)\n\n"
+    
+    makefile += "clean: clean_blog\n"
+    makefile += f"\trm -f {footer_bin}\n\n"
 
     makefile += "clean_all: clean\n"
     makefile += f"\trm -f {css_bin} $(ASSETS_BUILD) $(PAGES_BUILD) $(POSTS_BUILD) $(BLOG_PAGES_BUILD)"
@@ -139,6 +142,12 @@ def reload():
 def make():
     config = init.load_config()
     init.check_init(config)
+    
+    process = subprocess.Popen(
+        ["make", "clean_blog"], stderr=subprocess.STDOUT, stdout=subprocess.PIPE
+    )
+    for line in iter(process.stdout.readline, b""):
+        sys.stdout.write(line.decode(sys.stdout.encoding))
 
     posts = sites.read_tracked_posts()
     build_blog.build_blog(posts, config)
