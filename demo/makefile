@@ -4,9 +4,9 @@ ASSETS_BUILD = $(foreach asset, $(ASSETS_SRC), $(patsubst src/%,bin/%,$(asset)))
 PAGES_BUILD = bin/about.html bin/test.html
 POSTS_BUILD = bin/blog/posts/entry2.html bin/blog/posts/entry3.html bin/blog/posts/entry1.html
 
-BLOG_PAGES_SRC = bin/blog/index.md bin/blog/pages/index.md bin/blog/pages/page1.md bin/blog/pages/page2.md bin/blog/tags/index.md bin/blog/tags/tag1.md bin/blog/tags/tag2.md bin/blog/tags/tag3.md
+BLOG_PAGES_SRC = bin/blog/index.md bin/blog/pages/index.md bin/blog/pages/page1.md bin/blog/pages/page2.md bin/blog/tags/index.md bin/blog/tags/tag1.md bin/blog/tags/tag2.md bin/blog/tags/tag3-with-space.md
 
-BLOG_PAGES_BUILD = bin/blog/index.html bin/blog/pages/index.html bin/blog/pages/page1.html bin/blog/pages/page2.html bin/blog/tags/index.html bin/blog/tags/tag1.html bin/blog/tags/tag2.html bin/blog/tags/tag3.html
+BLOG_PAGES_BUILD = bin/blog/index.html bin/blog/pages/index.html bin/blog/pages/page1.html bin/blog/pages/page2.html bin/blog/tags/index.html bin/blog/tags/tag1.html bin/blog/tags/tag2.html bin/blog/tags/tag3-with-space.html
 
 all: assets html
 
@@ -59,8 +59,8 @@ bin/blog/tags/tag1.html: bin/blog/tags/tag1.md bin/blog/tags/tag1.md src/include
 bin/blog/tags/tag2.html: bin/blog/tags/tag2.md bin/blog/tags/tag2.md src/include/menu.md bin/include/footer.html
 	pandoc -o $@ -s $< --filter panblog_site_filter --css=/css/style.css --metadata-file src/include/menu.md --metadata-file bin/blog/tags/tag2.md -A bin/include/footer.html --section-divs --template src/templates/tag.html --metadata active-site=/blog/index.html
 
-bin/blog/tags/tag3.html: bin/blog/tags/tag3.md bin/blog/tags/tag3.md src/include/menu.md bin/include/footer.html
-	pandoc -o $@ -s $< --filter panblog_site_filter --css=/css/style.css --metadata-file src/include/menu.md --metadata-file bin/blog/tags/tag3.md -A bin/include/footer.html --section-divs --template src/templates/tag.html --metadata active-site=/blog/index.html
+bin/blog/tags/tag3-with-space.html: bin/blog/tags/tag3-with-space.md bin/blog/tags/tag3-with-space.md src/include/menu.md bin/include/footer.html
+	pandoc -o $@ -s $< --filter panblog_site_filter --css=/css/style.css --metadata-file src/include/menu.md --metadata-file bin/blog/tags/tag3-with-space.md -A bin/include/footer.html --section-divs --template src/templates/tag.html --metadata active-site=/blog/index.html
 
 .PHONY: clean clean_blog clean_all
 

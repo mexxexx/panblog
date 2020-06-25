@@ -86,6 +86,8 @@ def get_short_content(content, max_word_count):
         short_content += "..."
     return short_content
 
+def tag_url(tag, base_url, tags_dir, extension="html"):
+    return base_url + tags_dir + tag.lower().strip().replace(" ", "-") + "." + extension
 
 def get_tag_list(posts):
     tags = {}
@@ -107,8 +109,8 @@ def create_tag_index(tags, config):
     result = '---\ntitle: Tags\n'
     result += 'tags-list:\n'
     for tag, _ in tags.items():
-        link = base_url + tags_dir + tag + ".html"
-        result += '  - {{ text : {}, href : {} }}\n'.format(tag, link)
+        href = tag_url(tag, base_url, tags_dir)
+        result += '  - {{ text : {}, href : {} }}\n'.format(tag, href)
     result += "---\n"
     return result
 
@@ -136,8 +138,8 @@ def create_tag_page(tag_name, posts, config):
         result += "  date: {}\n".format(post["date"])
         result += "  tags:\n"
         for tag in post["tags"]:
-            link = base_url + tags_dir + tag + ".html"
-            result += '  - {{ text : {}, href : {} }}\n'.format(tag, link)
+            href = tag_url(tag, base_url, tags_dir)
+            result += '  - {{ text : {}, href : {} }}\n'.format(tag, href)
         content = get_short_content(
             post["content"], max_word_count
         ) + " [read more]({})".format(url)
@@ -179,7 +181,7 @@ def write_tag_pages(tag_pages, config):
     tags_dir = config["DIR"]["blogtags"] + "/"
 
     for tag, content in tag_pages:
-        filename = "{}{}.md".format(tags_dir, tag)
+        filename = tag_url(tag, "", tags_dir, "md")
         filename_bin = "{0}{1}".format(bin_dir, filename)
 
         sites.add_blog_page(filename, filename_bin, "tag.html")
@@ -232,8 +234,8 @@ def create_blog_page(num, num_pages, posts, config):
         result += "  date: {}\n".format(post["date"])
         result += "  tags:\n"
         for tag in post["tags"]:
-            link = base_url + tags_dir + tag + ".html"
-            result += '  - {{ text : {}, href : {} }}\n'.format(tag, link)
+            href = tag_url(tag, base_url, tags_dir)
+            result += '  - {{ text : {}, href : {} }}\n'.format(tag, href)
         content = get_short_content(
             post["content"], max_word_count
         ) + " [read more]({})".format(url)

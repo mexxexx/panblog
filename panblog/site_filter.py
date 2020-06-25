@@ -66,7 +66,7 @@ def parse_tags(tags, base_url, config):
 
     for tag in tags["c"]:
         value = stringify(tag)
-        link = base_url + tagsdir + "/" + value + ".html"
+        link = base_url + tagsdir + "/" + value.lower().strip().replace(" ", "-") + ".html"
         tag["t"] = "MetaMap"
         tag["c"] = create_meta_map({"text": value, "href": link})
 

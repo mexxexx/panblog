@@ -6,4 +6,4 @@ blog/pages/page2.md;src/blog/index.md;blog.html
 blog/tags/index.md;bin/blog/tags/index.md;tag_index.html
 blog/tags/tag1.md;bin/blog/tags/tag1.md;tag.html
 blog/tags/tag2.md;bin/blog/tags/tag2.md;tag.html
-blog/tags/tag3.md;bin/blog/tags/tag3.md;tag.html
+blog/tags/tag3-with-space.md;bin/blog/tags/tag3-with-space.md;tag.html
